@@ -1,14 +1,16 @@
 #-*- coding: utf-8 -*-
 from pathlib import Path
-#from botoccore.exceptions import ClientError
 '''Class for S3 Buckets'''
 import mimetypes
+from botocore.exceptions import ClientError
 
 class BucketManager:
     def __init__(self,session):
         '''Create BucketManager object'''
         self.session = session
         self.s3 = session.resource('s3')
+
+
 
     def all_buckets(self):
         '''Get an iterator for all buckets'''
@@ -19,42 +21,46 @@ class BucketManager:
         return self.s3.Bucket(bucket).objects.all()
 
     def init_bucket(self, bucket_name):
-        '''Create bucket or return an existing one by name '''
+        """Create new bucket, or return existing one by name."""
         s3_bucket = None
         try:
             s3_bucket = self.s3.create_bucket(
-                Bucket = bucket_name,
+                Bucket=bucket_name,
                 CreateBucketConfiguration={
-                    'LocationConstraint': self.session.region_name
+                    'LocationConstraint':'ap-south-1'
                 }
             )
         except ClientError as error:
             if error.response['Error']['Code'] == 'BucketAlreadyOwnedByYou':
-                s3_bucket = self.s3.Bucket(bucket)
+                s3_bucket = self.s3.Bucket(bucket_name)
             else:
                 raise error
 
         return s3_bucket
 
-    def set_policy(self,bucket):
-        '''Set the bucket policy to be readable by everyone'''
-        policy = """
-            {
-                "Version":"2012-10-17",
-                "Statement":[{
-                "Sid":"PublicReadForGetBucketObjects",
-                "Effect":"Allow",
-                "Principal": "*",
-                "Action":["s3:GetObject"],
-                "Resource":["arn:aws:s3:::automatingawsbill/*"
+
+    def set_policy(self, bucket):
+         """Set bucket policy to be readable by everyone."""
+         policy = """
+         {
+           "Version":"2012-10-17",
+           "Statement":[{
+           "Sid":"PublicReadGetObject",
+           "Effect":"Allow",
+           "Principal": "*",
+               "Action":["s3:GetObject"],
+               "Resource":["arn:aws:s3:::%s/*"
                ]
              }
-            ]
-            }
-            """ % bucket.name
-        policy = policy.strip()
-        pol = bucket.Policy()
-        pol.put(Policy=policy)
+           ]
+         }
+         """ % bucket.name
+         policy = policy.strip()
+
+         pol = bucket.Policy()
+         pol.put(Policy=policy)
+
+
 
     def configure_webiste(self,bucket):
         bucket.Website().put(WebsiteConfiguration={

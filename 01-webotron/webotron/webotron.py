@@ -9,12 +9,13 @@ from bucket import BucketManager
 session = boto3.Session(profile_name='DevOps')
 bucket_manager = BucketManager(session)
 
-#s3 = session.resource('s3')
+s3 = session.resource('s3')
 
 @click.group()
 def cli():
     "Webotron deploys websites to AWS."
     pass
+
 
 @cli.command('list_buckets')
 def list_buckets():
